@@ -29,7 +29,7 @@ targetFolds = subsetFeatures(folds = targetFolds, features = targetFeatures)
 
 # Training the prediciton model. Random forest worked well in iniial testing
 rfModel = train(classe ~ ., data=targetFolds$train, method="rf")
-rfTest = testModel(targetFolds, rfModel)
+rfTest = testModel2(targetFolds, rfModel)
 
 ######## Testing ##################################################################
 

@@ -15,8 +15,15 @@ subsetFeatures = function(folds, features, outcome = "classe"){
   # return processed data folds  
   return(folds)
 }
-# function to simultaneously test all data subsets
-testModel = function(folds, model){
+# simple function to function to get the confusion matrix from the
+# prediction made by a given model object on a particular data set
+testModel = function(data, model){
+  p = predict(model, data)
+  c <- confusionMatrix(p1, data$classe)
+  return (c)
+}
+
+testModel2 = function(folds, model){
   # self test on training fold
   p1 = predict(model, folds$train)
   c1 <- confusionMatrix(p1, folds$train$classe)
@@ -34,16 +41,8 @@ testModel = function(folds, model){
   testData$comparison = as.data.frame( rbind(inS = c1$overall,
                                              vS = c2$overall,
                                              outS = c3$overall
+                                             # add the accuracy comparison table by class!
   ), stringsAsFactors=F)
   # return model testing info list
   return (testData)
-}
-
-# Project submission helper from instruction page
-pml_write_files = function(x){
-  n = length(x)
-  for(i in 1:n){
-    filename = paste0("problem_id_",i,".txt")
-    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
-  }
 }
