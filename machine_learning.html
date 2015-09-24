@@ -67,34 +67,24 @@ img {
 <h2>Outline</h2>
 <ol>
 <li>
-<a href="#summary"></a>Executive Summary
+<a href="#summary">Executive Summary</a>
 </li>
 <li>
-<a href="#walkthrough"></a>Code Walkthrough
+<a href="#walkthrough">Code Walkthrough</a>
 </li>
 <ol>
-<pre><code>&lt;li&gt;&lt;a href=&quot;#loadData&quot;&gt;&lt;/a&gt;Data preparation&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;#features&quot;&gt;&lt;/a&gt;Feature selection&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;#training&quot;&gt;&lt;/a&gt;Model training&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;#results&quot;&gt;&lt;/a&gt;Results&lt;/li&gt;</code></pre>
+<pre><code>&lt;li&gt;&lt;a href=&quot;#loadData&quot; &gt;Data preparation&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#features&quot; &gt;Feature selection and Model training&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#results&quot; &gt;Results&lt;/a&gt;&lt;/li&gt;</code></pre>
 </ol>
 </ol>
-<h3 id="loadData">
-Data preparation
-</h3>
-<h3 id="features">
-Feature Selection
-</h3>
-<h3 id="features">
-Model training and analysis
-</h3>
 <h2 id="summary">
 Executive Summary
 </h2>
-<p><b>Background:</b><br />The aim of this project was to classify the way in which a particular activity was performed in order to provide feedback to potential user regarding how well they performed this activity. This is the logical step beyond using the data to identify what the activity is. The subtle challenge is that it is harder to classify <em>how well</em> an activity is being perfomed than to distinguish one type of activity from another. </br> <b>Methodology:</b><br />For this analysis I split the training data set into 3 folds in order to generate training, validation and testing data subsets on which to train and validate my chosen machine learning (ML) approach. The ML method of choice was the <b>Random forest</b>, using the caret package implemention in R.</p>
+<p><b>Background:</b><br />The aim of this project was to classify the way in which a particular activity was performed in order to provide feedback to potential user regarding how well they performed this activity. This is the logical step beyond using the data to identify what the activity is. The subtle challenge is that it is harder to classify <em>how well</em> an activity is being perfomed than to distinguish one type of activity from another. </br> <b>Methodology:</b><br />For this analysis I split the training data set into 3 folds in order to generate training, validation and testing data subsets on which to train and validate my chosen machine learning (ML) approach. The ML method of choice was the <b>Random forest</b>, using the caret package implemention in R. I performed a 3 fold cross-validation to estimate the out of sample error by using each fold to train the model, then estimating prediction accuracy on the remaining two folds. Since I did not use the validation data sets</p>
 <div id="fix" class="section level3">
 <h3>Fix</h3>
-<p>K-fold cross-validation<br />Accuracy was used as the primary performance metric during the ML training and validation steps, and the average accuracy of the trained Random forrest model over the validation and test sets was used to get an estimate of the generalisation (out of sample) accuracy. </br> <b>Results:</b> The methodology was used to fit a random model Random forest that had an accuracy of 96.4% and 96.7%, respectively, giving estimated out of sample accuracy of 96.6%, implying an expected out of sample error of roughly <b style="color:green;">3.5%</b>.</p>
+<p>K-fold cross-validation<br />Accuracy was used as the primary performance metric during the ML training and validation steps, and the average accuracy of the trained Random forrest model over the validation and test sets was used to get an estimate of the generalisation (out of sample) accuracy. </br> <b>Results:</b> The methodology was used to fit a random model Random forest that had an accuracy of 96.4% ± 4, respectively, giving estimated out of sample accuracy of 96.6%, implying an expected out of sample error of roughly <b style="color:green;">3.5%</b>.</p>
 <p>Random forest (why?),<br />K-fold cross-validation (random partitioning to avoid overfitting to individuals)</p>
 </div>
 <div id="do-the-authors-describe-what-they-expect-the-out-of-sample-error-to-be-and-estimate-the-error-appropriately-with-cross-validation-done" class="section level3">
@@ -109,10 +99,12 @@ Code Walkthrough
 <h3 id="loadData">
 Data preparation
 </h3>
-<pre class="r"><code>######## Analysis setup ###########################################################
-set.seed(294); require(caret); source(&quot;./helper_functions.R&quot;)
-
-######## Data Preparation #########################################################
+<pre class="r"><code>######## Analysis setup ######################################################
+set.seed(294); require(caret); source(&quot;./helper_functions.R&quot;)</code></pre>
+<pre><code>## Loading required package: caret
+## Loading required package: lattice
+## Loading required package: ggplot2</code></pre>
+<pre class="r"><code>######## Data Preparation ####################################################
 #load data
 trainData = read.csv(&quot;../data//pml-training.csv&quot;, stringsAsFactors=F)    
 trainData$classe &lt;- factor(trainData$classe)
@@ -127,143 +119,65 @@ targetFolds$train = trainData[dataFoldSegments$Fold1,]
 targetFolds$validation = trainData[dataFoldSegments$Fold2,]
 targetFolds$test = trainData[dataFoldSegments$Fold3,]</code></pre>
 <h3 id="features">
-Feature selection
+Feature selection and Model training
 </h3>
-<pre class="r"><code>## feature selection
+<pre class="r"><code>######## feature selection ###################################################
+# a) get column indices for desired features
 rawSensorFeatures = grep(&quot;^accel|^gyros|^magn&quot;, names(trainData), value=T)
 targetFeatures = rawSensorFeatures
+# b) remove unwanted features from the data set
+targetFolds &lt;- subsetFeatures(folds = targetFolds, features = targetFeatures)
 
-# now to subset on features to remove unwanted features
-targetFolds &lt;- subsetFeatures(folds = targetFolds, features = targetFeatures)</code></pre>
-<h3 id="training">
-Model training
-</h3>
-<p>Cross validation cycle 1</p>
-<pre class="r"><code># Training the prediciton model. Random forest worked well in iniial testing
-rfModel1 = train(classe ~ ., data=targetFolds$train, method=&quot;rf&quot;)
-rfTest1 = testModel(targetFolds, rfModel1)</code></pre>
-<p>Cross validation cycle 2</p>
-<pre class="r"><code># Training the prediciton model. Random forest worked well in iniial testing
-targetFolds2 = list()
-targetFolds2$train = targetFolds$test
-targetFolds2$validation = targetFolds$train
-targetFolds2$test = targetFolds$validation
-
-rfModel2 = train(classe ~ ., data=targetFolds2$train, method=&quot;rf&quot;)
-rfTest2 = testModel(targetFolds2, rfModel2)</code></pre>
-<p>Cross validation cycle 3</p>
-<pre class="r"><code># http://stackoverflow.com/questions/8370455/how-to-use-random-forests-in-r-with-missing-values
-targetFolds3 = list()
-targetFolds3$train = targetFolds$validation
-targetFolds3$validation = targetFolds$test
-targetFolds3$test = targetFolds$train
-# Training the prediciton model. Random forest worked well in iniial testing
-trainFolds3 &lt;- subsetFeatures(targetFolds3, rawSensorFeatures)
-# rfModel3 = train(classe ~ ., data=targetFolds3$train, method=&quot;rf&quot;)
-# rfTest3 = testModel(targetFolds3, rfModel3)
-names(targetFolds3)</code></pre>
-<pre><code>## [1] &quot;train&quot;      &quot;validation&quot; &quot;test&quot;</code></pre>
-<pre class="r"><code>names(targetFolds3$train)</code></pre>
-<pre><code>##   [1] &quot;X&quot;                        &quot;user_name&quot;               
-##   [3] &quot;raw_timestamp_part_1&quot;     &quot;raw_timestamp_part_2&quot;    
-##   [5] &quot;cvtd_timestamp&quot;           &quot;new_window&quot;              
-##   [7] &quot;num_window&quot;               &quot;roll_belt&quot;               
-##   [9] &quot;pitch_belt&quot;               &quot;yaw_belt&quot;                
-##  [11] &quot;total_accel_belt&quot;         &quot;kurtosis_roll_belt&quot;      
-##  [13] &quot;kurtosis_picth_belt&quot;      &quot;kurtosis_yaw_belt&quot;       
-##  [15] &quot;skewness_roll_belt&quot;       &quot;skewness_roll_belt.1&quot;    
-##  [17] &quot;skewness_yaw_belt&quot;        &quot;max_roll_belt&quot;           
-##  [19] &quot;max_picth_belt&quot;           &quot;max_yaw_belt&quot;            
-##  [21] &quot;min_roll_belt&quot;            &quot;min_pitch_belt&quot;          
-##  [23] &quot;min_yaw_belt&quot;             &quot;amplitude_roll_belt&quot;     
-##  [25] &quot;amplitude_pitch_belt&quot;     &quot;amplitude_yaw_belt&quot;      
-##  [27] &quot;var_total_accel_belt&quot;     &quot;avg_roll_belt&quot;           
-##  [29] &quot;stddev_roll_belt&quot;         &quot;var_roll_belt&quot;           
-##  [31] &quot;avg_pitch_belt&quot;           &quot;stddev_pitch_belt&quot;       
-##  [33] &quot;var_pitch_belt&quot;           &quot;avg_yaw_belt&quot;            
-##  [35] &quot;stddev_yaw_belt&quot;          &quot;var_yaw_belt&quot;            
-##  [37] &quot;gyros_belt_x&quot;             &quot;gyros_belt_y&quot;            
-##  [39] &quot;gyros_belt_z&quot;             &quot;accel_belt_x&quot;            
-##  [41] &quot;accel_belt_y&quot;             &quot;accel_belt_z&quot;            
-##  [43] &quot;magnet_belt_x&quot;            &quot;magnet_belt_y&quot;           
-##  [45] &quot;magnet_belt_z&quot;            &quot;roll_arm&quot;                
-##  [47] &quot;pitch_arm&quot;                &quot;yaw_arm&quot;                 
-##  [49] &quot;total_accel_arm&quot;          &quot;var_accel_arm&quot;           
-##  [51] &quot;avg_roll_arm&quot;             &quot;stddev_roll_arm&quot;         
-##  [53] &quot;var_roll_arm&quot;             &quot;avg_pitch_arm&quot;           
-##  [55] &quot;stddev_pitch_arm&quot;         &quot;var_pitch_arm&quot;           
-##  [57] &quot;avg_yaw_arm&quot;              &quot;stddev_yaw_arm&quot;          
-##  [59] &quot;var_yaw_arm&quot;              &quot;gyros_arm_x&quot;             
-##  [61] &quot;gyros_arm_y&quot;              &quot;gyros_arm_z&quot;             
-##  [63] &quot;accel_arm_x&quot;              &quot;accel_arm_y&quot;             
-##  [65] &quot;accel_arm_z&quot;              &quot;magnet_arm_x&quot;            
-##  [67] &quot;magnet_arm_y&quot;             &quot;magnet_arm_z&quot;            
-##  [69] &quot;kurtosis_roll_arm&quot;        &quot;kurtosis_picth_arm&quot;      
-##  [71] &quot;kurtosis_yaw_arm&quot;         &quot;skewness_roll_arm&quot;       
-##  [73] &quot;skewness_pitch_arm&quot;       &quot;skewness_yaw_arm&quot;        
-##  [75] &quot;max_roll_arm&quot;             &quot;max_picth_arm&quot;           
-##  [77] &quot;max_yaw_arm&quot;              &quot;min_roll_arm&quot;            
-##  [79] &quot;min_pitch_arm&quot;            &quot;min_yaw_arm&quot;             
-##  [81] &quot;amplitude_roll_arm&quot;       &quot;amplitude_pitch_arm&quot;     
-##  [83] &quot;amplitude_yaw_arm&quot;        &quot;roll_dumbbell&quot;           
-##  [85] &quot;pitch_dumbbell&quot;           &quot;yaw_dumbbell&quot;            
-##  [87] &quot;kurtosis_roll_dumbbell&quot;   &quot;kurtosis_picth_dumbbell&quot; 
-##  [89] &quot;kurtosis_yaw_dumbbell&quot;    &quot;skewness_roll_dumbbell&quot;  
-##  [91] &quot;skewness_pitch_dumbbell&quot;  &quot;skewness_yaw_dumbbell&quot;   
-##  [93] &quot;max_roll_dumbbell&quot;        &quot;max_picth_dumbbell&quot;      
-##  [95] &quot;max_yaw_dumbbell&quot;         &quot;min_roll_dumbbell&quot;       
-##  [97] &quot;min_pitch_dumbbell&quot;       &quot;min_yaw_dumbbell&quot;        
-##  [99] &quot;amplitude_roll_dumbbell&quot;  &quot;amplitude_pitch_dumbbell&quot;
-## [101] &quot;amplitude_yaw_dumbbell&quot;   &quot;total_accel_dumbbell&quot;    
-## [103] &quot;var_accel_dumbbell&quot;       &quot;avg_roll_dumbbell&quot;       
-## [105] &quot;stddev_roll_dumbbell&quot;     &quot;var_roll_dumbbell&quot;       
-## [107] &quot;avg_pitch_dumbbell&quot;       &quot;stddev_pitch_dumbbell&quot;   
-## [109] &quot;var_pitch_dumbbell&quot;       &quot;avg_yaw_dumbbell&quot;        
-## [111] &quot;stddev_yaw_dumbbell&quot;      &quot;var_yaw_dumbbell&quot;        
-## [113] &quot;gyros_dumbbell_x&quot;         &quot;gyros_dumbbell_y&quot;        
-## [115] &quot;gyros_dumbbell_z&quot;         &quot;accel_dumbbell_x&quot;        
-## [117] &quot;accel_dumbbell_y&quot;         &quot;accel_dumbbell_z&quot;        
-## [119] &quot;magnet_dumbbell_x&quot;        &quot;magnet_dumbbell_y&quot;       
-## [121] &quot;magnet_dumbbell_z&quot;        &quot;roll_forearm&quot;            
-## [123] &quot;pitch_forearm&quot;            &quot;yaw_forearm&quot;             
-## [125] &quot;kurtosis_roll_forearm&quot;    &quot;kurtosis_picth_forearm&quot;  
-## [127] &quot;kurtosis_yaw_forearm&quot;     &quot;skewness_roll_forearm&quot;   
-## [129] &quot;skewness_pitch_forearm&quot;   &quot;skewness_yaw_forearm&quot;    
-## [131] &quot;max_roll_forearm&quot;         &quot;max_picth_forearm&quot;       
-## [133] &quot;max_yaw_forearm&quot;          &quot;min_roll_forearm&quot;        
-## [135] &quot;min_pitch_forearm&quot;        &quot;min_yaw_forearm&quot;         
-## [137] &quot;amplitude_roll_forearm&quot;   &quot;amplitude_pitch_forearm&quot; 
-## [139] &quot;amplitude_yaw_forearm&quot;    &quot;total_accel_forearm&quot;     
-## [141] &quot;var_accel_forearm&quot;        &quot;avg_roll_forearm&quot;        
-## [143] &quot;stddev_roll_forearm&quot;      &quot;var_roll_forearm&quot;        
-## [145] &quot;avg_pitch_forearm&quot;        &quot;stddev_pitch_forearm&quot;    
-## [147] &quot;var_pitch_forearm&quot;        &quot;avg_yaw_forearm&quot;         
-## [149] &quot;stddev_yaw_forearm&quot;       &quot;var_yaw_forearm&quot;         
-## [151] &quot;gyros_forearm_x&quot;          &quot;gyros_forearm_y&quot;         
-## [153] &quot;gyros_forearm_z&quot;          &quot;accel_forearm_x&quot;         
-## [155] &quot;accel_forearm_y&quot;          &quot;accel_forearm_z&quot;         
-## [157] &quot;magnet_forearm_x&quot;         &quot;magnet_forearm_y&quot;        
-## [159] &quot;magnet_forearm_z&quot;         &quot;classe&quot;</code></pre>
+######## Model Cross validation - Training ###################################
+# Cycle 1: train = train, validation = validation, test = test
+rfModel1 = train(classe ~ ., data=targetFolds$train, method=&quot;rf&quot;)</code></pre>
+<pre><code>## Loading required package: randomForest
+## randomForest 4.6-10
+## Type rfNews() to see new features/changes/bug fixes.</code></pre>
+<pre class="r"><code># Cycle 2: train = validation, validation = test, test = train
+rfModel2 = train(classe ~ ., data=targetFolds$validation, method=&quot;rf&quot;)
+# Cycle 3: train = test, validation = train, test = validation
+rfModel3 = train(classe ~ ., data=targetFolds$test, method=&quot;rf&quot;)</code></pre>
 <h3 id="results">
 Analysis results
 </h3>
-<pre class="r"><code>averageAcc = c(
-  mean(rfTest1$comparison$Accuracy[1], 
-       rfTest2$comparison$Accuracy[1],rfTest3$comparison$Accuracy[1]),
-  mean(rfTest1$comparison$Accuracy[2], 
-       rfTest2$comparison$Accuracy[2],rfTest3$comparison$Accuracy[2]),
-  mean(rfTest1$comparison$Accuracy[3], 
-       rfTest2$comparison$Accuracy[3],rfTest3$comparison$Accuracy[3])
-  )
+<pre class="r"><code>######## Model Cross validation - Testing ####################################
+require(caret)
+# Cycle 1: model testing
+rfTest1a = testModel(targetFolds$train, rfModel1)
+rfTest1b = testModel(targetFolds$validation, rfModel1)
+rfTest1c = testModel(targetFolds$test, rfModel1)
+# Cycle 2: model testing
+rfTest2a = testModel(targetFolds$validation, rfModel2)
+rfTest2b = testModel(targetFolds$test, rfModel2)
+rfTest2c = testModel(targetFolds$train, rfModel2)
+# Cycle 3: model testing
+rfTest3a = testModel(targetFolds$test, rfModel3)
+rfTest3b = testModel(targetFolds$train, rfModel3)
+rfTest3c = testModel(targetFolds$validation, rfModel3)
 
+######## Summary of cross validation results #################################
 accuracyTest = data.frame(rbind(
-  cycle1 = rfTest1$comparison$Accuracy,
-  cycle2 = rfTest2$comparison$Accuracy,
-  cycle3 = rfTest3$comparison$Accuracy,
-  average = averageAcc
+  cycle1 = c( rfTest1a$overall[1], rfTest1b$overall[1], rfTest1c$overall[1] ),
+  cycle2 = c( rfTest2a$overall[1], rfTest2b$overall[1], rfTest2c$overall[1] ),
+  cycle3 = c( rfTest3a$overall[1], rfTest3b$overall[1], rfTest3c$overall[1] )
   ), stringsAsFactors=F)
+names(accuracyTest) &lt;- c(&quot;train&quot;,&quot;validation&quot;, &quot;test&quot;)
 
-names(accuracyTest) &lt;- c(&quot;train&quot;,&quot;validation&quot;, &quot;test&quot;)</code></pre>
+accVals = c(accuracyTest$validation, accuracyTest$test)
+accMean = round(mean(accVals) * 100, 2)
+accSd = round(sd(accVals) * 100, 2)
+
+errorVals = 1 - accVals
+errorMean = round(mean(errorVals) *100, 2)
+errorSd = round(sd(errorVals) * 100, 2)
+
+accuracyTest  </code></pre>
+<pre><code>##        train validation      test
+## cycle1     1  0.9651483 0.9691179
+## cycle2     1  0.9691179 0.9660499
+## cycle3     1  0.9704848 0.9665240</code></pre>
+<p>From this analysis, the estimated out-of sample accuracy measured from the 6 “non-training” data folds tested in each step of the cross-validation cycle was96.77 % ± 0.21 %. This means that the estimated out of sample error is only was3.23 % ± 0.21 %. While it is important to note that this out of sample error estimate is optimistic. The model that I have constructed in this study is quite a good predictor of the quality of the excercise of interested from raw sensor data.</p>
 </div>
 </div>
 </div>

@@ -5,21 +5,23 @@ createGrepOrEntity = function(x){
   return (output)
 }
 
-### feature selection function
+### feature selection function... updated (modify to process more folds)
 subsetFeatures = function(folds, features, outcome = "classe"){
   # create REGEX based on the variables (columns) to retain in data set
   varREGEX = createGrepOrEntity(c(outcome, features))
   # remove unwanted features from data folds (split data)
   folds$test <- folds$test[, grep( varREGEX, names(folds$test))]
   folds$train <- folds$train[, grep( varREGEX, names(folds$train))]
+  folds$validation <- folds$validation[, grep( varREGEX, names(folds$validation))]
   # return processed data folds  
   return(folds)
 }
+
 # simple function to function to get the confusion matrix from the
 # prediction made by a given model object on a particular data set
 testModel = function(data, model){
   p = predict(model, data)
-  c <- confusionMatrix(p1, data$classe)
+  c <- confusionMatrix(p, data$classe)
   return (c)
 }
 

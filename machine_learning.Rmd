@@ -5,9 +5,9 @@
   <li><a href="#summary">Executive Summary</a></li>
   <li><a href="#walkthrough">Code Walkthrough</a></li>
   <ol>
-    <li><a href="#loadData">Data preparation</a></li>
-    <li><a href="#features">Feature selection and Model training</a></li>
-    <li><a href="#results">Results</a></li>
+    <li><a href="#loadData" >Data preparation</a></li>
+    <li><a href="#features" >Feature selection and Model training</a></li>
+    <li><a href="#results" >Results</a></li>
   </ol>
 </ol>
 
@@ -16,22 +16,10 @@
 The aim of this project was to classify the way in which a particular activity was performed in order to provide feedback to potential user regarding how well they performed this activity. This is the logical step beyond using the data to identify what the activity is. The subtle challenge is that it is harder to classify *how well* an activity is being perfomed than to distinguish one type of activity from another. 
 </br>
 <b>Methodology:</b>   
-For this analysis I split the training data set into 3 folds in order to generate training, validation and testing data subsets on which to train and validate my chosen machine learning (ML) approach. The ML method of choice was the <b>Random forest</b>, using the caret package implemention in R. 
-
-### Fix
-K-fold cross-validation  
-Accuracy was used as the primary performance metric during the ML training and validation steps, and the average accuracy of the trained Random forrest model over the validation and test sets was used to get an estimate of the generalisation (out of sample) accuracy.
+For this analysis I split the training data set into 3 folds in order to generate training, validation and testing data subsets on which to train and validate my chosen machine learning (ML) approach. The ML method of choice was the <b>Random forest</b>, using the caret package implemention in R. I performed a 3 fold cross-validation to estimate the out of sample error by using each fold to train the model, then estimating prediction accuracy on the remaining two folds. Since I did not use the validation data sets to optimise the model, both "testing" data folds were suitable for use in the out-of-sample error estimate.
 </br>
 <b>Results:</b>
-The methodology was used to fit a random model Random forest that had an accuracy of 96.4% and 96.7%, respectively, giving estimated out of sample accuracy of 96.6%, implying an expected out of sample error of roughly <b style="color:green;">3.5%</b>. 
-
-Random forest (why?),  
-K-fold cross-validation (random partitioning to avoid overfitting to individuals)  
-
-### Do the authors describe what they expect the out of sample error to be and estimate the error appropriately with cross-validation?  (done)  
-
-... I split data into 3 even partitions (enough data to fit model, not enough to overfit), trained model on one fold, then estimated the model on the other 2 folds.
-
+The methodology was used to fit a random model Random forest that had an expected out of sample accuracy of <b style="color:green;">96.77 % &#177;  0.21 %</b>, implying an expected out of sample error of only <b style="color:green;">3.23 &#177; ± 0.21 %</b>. 
 
 <h2 id="walkthrough">Code Walkthrough</h2>  
 
@@ -39,9 +27,11 @@ Intro paragraph
 
 (http://groupware.les.inf.puc-rio.br/har)
 
-The training and testing of the model is described below. Note: for better code clarity, I separated the code into the main instructions (in the project_code.R file) and helper functions designed to streamline the analysis workflow (the helper_functions.R).
+The training and testing of the model is described below. Note: for better code clarity, I separated the code into the main instructions (in the project_code.R file) and helper functions designed to streamline the analysis workflow (helper_functions.R).
 
 <h3 id="loadData">Data preparation</h3> 
+
+... I split data into 3 even partitions (enough data to fit model, not enough to overfit), trained model on one fold, then estimated the model on the other 2 fold
 
 
 ```{r loadData, cache=TRUE}
@@ -66,6 +56,10 @@ targetFolds$test = trainData[dataFoldSegments$Fold3,]
 
 <h3 id="features">Feature selection and Model training</h3> 
 
+Random forest (why?),  
+K-fold cross-validation (random partitioning to avoid overfitting to individuals)  
+
+
 ```{r featuresAndTrain, cache=TRUE}
 ######## feature selection ###################################################
 # a) get column indices for desired features
@@ -74,27 +68,34 @@ targetFeatures = rawSensorFeatures
 # b) remove unwanted features from the data set
 targetFolds <- subsetFeatures(folds = targetFolds, features = targetFeatures)
 
-######## Model training and Cross validation #################################
+######## Model Cross validation - Training ###################################
 # Cycle 1: train = train, validation = validation, test = test
 rfModel1 = train(classe ~ ., data=targetFolds$train, method="rf")
-rfTest1a = testModel(targetFolds$train, rfModel1)
-rfTest1b = testModel(targetFolds$validation, rfModel1)
-rfTest1c = testModel(targetFolds$test, rfModel1)
 # Cycle 2: train = validation, validation = test, test = train
 rfModel2 = train(classe ~ ., data=targetFolds$validation, method="rf")
-rfTest2a = testModel(targetFolds$validation, rfModel2)
-rfTest2b = testModel(targetFolds$test, rfModel2)
-rfTest2c = testModel(targetFolds$train, rfModel2)
 # Cycle 3: train = test, validation = train, test = validation
 rfModel3 = train(classe ~ ., data=targetFolds$test, method="rf")
-rfTest3a = testModel(targetFolds$test, rfModel3)
-rfTest3b = testModel(targetFolds$train, rfModel3)
-rfTest3c = testModel(targetFolds$validation, rfModel3)
 ```
 
 <h3 id="results">Analysis results</h3> 
 
-```{r results}
+
+```{r results, cache=TRUE}
+######## Model Cross validation - Testing ####################################
+require(caret)
+# Cycle 1: model testing
+rfTest1a = testModel(targetFolds$train, rfModel1)
+rfTest1b = testModel(targetFolds$validation, rfModel1)
+rfTest1c = testModel(targetFolds$test, rfModel1)
+# Cycle 2: model testing
+rfTest2a = testModel(targetFolds$validation, rfModel2)
+rfTest2b = testModel(targetFolds$test, rfModel2)
+rfTest2c = testModel(targetFolds$train, rfModel2)
+# Cycle 3: model testing
+rfTest3a = testModel(targetFolds$test, rfModel3)
+rfTest3b = testModel(targetFolds$train, rfModel3)
+rfTest3c = testModel(targetFolds$validation, rfModel3)
+
 ######## Summary of cross validation results #################################
 accuracyTest = data.frame(rbind(
   cycle1 = c( rfTest1a$overall[1], rfTest1b$overall[1], rfTest1c$overall[1] ),
@@ -104,13 +105,15 @@ accuracyTest = data.frame(rbind(
 names(accuracyTest) <- c("train","validation", "test")
 
 accVals = c(accuracyTest$validation, accuracyTest$test)
-accMean = mean( accVals )
-accSd = mean( accVals )
+accMean = round(mean(accVals) * 100, 2)
+accSd = round(sd(accVals) * 100, 2)
 
-# test
-accVals
-accMean
-accSd
+errorVals = 1 - accVals
+errorMean = round(mean(errorVals) *100, 2)
+errorSd = round(sd(errorVals) * 100, 2)
 
+accuracyTest  
 ```
+
+From this analysis, the estimated out-of sample accuracy measured from the 6 "non-training" data folds tested in each step of the cross-validation cycle was `r accMean` % &#177; `r accSd` %. This means that the estimated out of sample error was only `r errorMean` % &#177; `r errorSd` %. While it is important to note that this out of sample error estimate is optimistic. The model that I have constructed in this study is quite a good predictor of the quality of the excercise of interested from raw sensor data.
 
