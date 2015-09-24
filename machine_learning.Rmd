@@ -2,36 +2,33 @@
 
 ## Outline  
 <ol>
-  <li><a href="#summary">Executive Summary</a></li>
-  <li><a href="#walkthrough">Code Walkthrough</a></li>
-  <ol>
-    <li><a href="#loadData" >Data preparation</a></li>
-    <li><a href="#features" >Feature selection and Model training</a></li>
-    <li><a href="#results" >Results</a></li>
-  </ol>
+<li><a href="#summary">Executive Summary</a></li>
+<li><a href="#walkthrough">Code Walkthrough</a></li>
+<ol>
+<li><a href="#loadData" >Data preparation</a></li>
+<li><a href="#features" >Feature selection and Model training</a></li>
+<li><a href="#results" >Results</a></li>
+</ol>
 </ol>
 
 <h2 id="summary">Executive Summary</h2>  
+
 <b>Background:</b>   
 The aim of this project was to classify the way in which a particular activity was performed in order to provide feedback to potential user regarding how well they performed this activity. This is the logical step beyond using the data to identify what the activity is. The subtle challenge is that it is harder to classify *how well* an activity is being perfomed than to distinguish one type of activity from another. 
 </br>
 <b>Methodology:</b>   
 For this analysis I split the training data set into 3 folds in order to generate training, validation and testing data subsets on which to train and validate my chosen machine learning (ML) approach. The ML method of choice was the <b>Random forest</b>, using the caret package implemention in R. I performed a 3 fold cross-validation to estimate the out of sample error by using each fold to train the model, then estimating prediction accuracy on the remaining two folds. Since I did not use the validation data sets to optimise the model, both "testing" data folds were suitable for use in the out-of-sample error estimate.
 </br>
-<b>Results:</b>
-The methodology was used to fit a random model Random forest that had an expected out of sample accuracy of <b style="color:green;">96.77 % &#177;  0.21 %</b>, implying an expected out of sample error of only <b style="color:green;">3.23 &#177; ± 0.21 %</b>. 
+<b>Results:</b>  
+The methodology was used to fit a random model Random forest that had an expected out of sample accuracy of <b style="color:green;">96.77 % &#177;  0.21 %</b>, implying an expected out of sample error of only <b style="color:green;">3.23 &#177; 0.21 %</b>. 
 
 <h2 id="walkthrough">Code Walkthrough</h2>  
 
-Intro paragraph
-
-(http://groupware.les.inf.puc-rio.br/har)
-
-The training and testing of the model is described below. Note: for better code clarity, I separated the code into the main instructions (in the project_code.R file) and helper functions designed to streamline the analysis workflow (helper_functions.R).
+The training and testing of the model is described in more detail in the sections below. Note, for better code clarity, I separated the code into the main instructions (in the project_code.R file) and helper functions designed to streamline the analysis workflow (helper_functions.R).
 
 <h3 id="loadData">Data preparation</h3> 
 
-... I split data into 3 even partitions (enough data to fit model, not enough to overfit), trained model on one fold, then estimated the model on the other 2 fold
+The data used for this analysis is from the Weight Lifting Exercises Dataset (http://groupware.les.inf.puc-rio.br/har) and was split data into 3 even partitions (enough data to fit model, not enough to overfit), trained model on one fold, then estimated the model on the other 2 fold. Importantly, this data splitting process randomly partitioned the data, meaning that the model would avoid the risk of overfitting to the the experimental test subjects. In short, the final model would not be biased to the training habits of the test subjects included in the training set.
 
 
 ```{r loadData, cache=TRUE}
@@ -56,9 +53,9 @@ targetFolds$test = trainData[dataFoldSegments$Fold3,]
 
 <h3 id="features">Feature selection and Model training</h3> 
 
-Random forest (why?),  
-K-fold cross-validation (random partitioning to avoid overfitting to individuals)  
+The random forest method was chosen as it performed best in preliminary testing, and it was also the approach used by the group from which this data was obtained (http://groupware.les.inf.puc-rio.br/work.jsf?p1=11201). The model was trained on each data subset in order to get an estimate of the out-of-sample error that one could expect when this model were to be used in the future on new input data. 
 
+The raw data from the accelerometer, gyroscope and magnetometer were used as the input feature set with which to train the model. This was because the information embedded within summary data features, such as accelaration or pitch, was already contained within the raw data from which those summary features was derived.
 
 ```{r featuresAndTrain, cache=TRUE}
 ######## feature selection ###################################################
@@ -77,7 +74,9 @@ rfModel2 = train(classe ~ ., data=targetFolds$validation, method="rf")
 rfModel3 = train(classe ~ ., data=targetFolds$test, method="rf")
 ```
 
-<h3 id="results">Analysis results</h3> 
+<h3 id="results">Analysis results</h3>  
+
+Each model was tested on the data used to train the model to check the usefulness of the approach. A poor performance on the input data would indicate that I had trained the wrong type of model on the data. Then each model was trained on the validation and test data folds in order to estimate out-of-sample accuracy. The average estimates were simply an aggregate of all of the out-of-sample tests from each round of training.  
 
 
 ```{r results, cache=TRUE}
