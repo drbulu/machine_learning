@@ -1,9 +1,4 @@
----
-title: "Activity Quality Prediction using sensor data"
-output:
-    html_document:
-        keep_md: true    
----
+# Activity Quality Prediction using sensor data
 
 ## Outline  
 <ol>
@@ -36,7 +31,8 @@ The training and testing of the model is described in more detail in the section
 The data used for this analysis is from the Weight Lifting Exercises Dataset (http://groupware.les.inf.puc-rio.br/har) and was split data into 3 even partitions (enough data to fit model, not enough to overfit), trained model on one fold, then estimated the model on the other 2 fold. Importantly, this data splitting process randomly partitioned the data, meaning that the model would avoid the risk of overfitting to the the experimental test subjects. In short, the final model would not be biased to the training habits of the test subjects included in the training set.
 
 
-```{r loadData, cache=TRUE}
+
+```r
 ######## Analysis setup ######################################################
 set.seed(294); require(caret); source("./helper_functions.R")
 
@@ -62,7 +58,8 @@ The random forest method was chosen as it performed best in preliminary testing,
 
 The raw data from the accelerometer, gyroscope and magnetometer were used as the input feature set with which to train the model. This was because the information embedded within summary data features, such as accelaration or pitch, was already contained within the raw data from which those summary features was derived.
 
-```{r featuresAndTrain, cache=TRUE}
+
+```r
 ######## feature selection ###################################################
 # a) get column indices for desired features
 rawSensorFeatures = grep("^accel|^gyros|^magn", names(trainData), value=T)
@@ -84,7 +81,8 @@ rfModel3 = train(classe ~ ., data=targetFolds$test, method="rf")
 Each model was tested on the data used to train the model to check the usefulness of the approach. A poor performance on the input data would indicate that I had trained the wrong type of model on the data. Then each model was trained on the validation and test data folds in order to estimate out-of-sample accuracy. The average estimates were simply an aggregate of all of the out-of-sample tests from each round of training.  
 
 
-```{r results, cache=TRUE}
+
+```r
 ######## Model Cross validation - Testing ####################################
 require(caret)
 # Cycle 1: model testing
@@ -119,5 +117,12 @@ errorSd = round(sd(errorVals) * 100, 2)
 accuracyTest  
 ```
 
-From this analysis, the estimated out-of sample accuracy measured from the 6 "non-training" data folds tested in each step of the cross-validation cycle was `r accMean` % &#177; `r accSd` %. This means that the estimated out of sample error was only `r errorMean` % &#177; `r errorSd` %. While it is important to note that this out of sample error estimate is optimistic. The model that I have constructed in this study is quite a good predictor of the quality of the excercise of interest from raw sensor data.
+```
+##        train validation      test
+## cycle1     1  0.9643840 0.9675841
+## cycle2     1  0.9698777 0.9721713
+## cycle3     1  0.9729358 0.9668297
+```
+
+From this analysis, the estimated out-of sample accuracy measured from the 6 "non-training" data folds tested in each step of the cross-validation cycle was 96.9 % &#177; 0.33 %. This means that the estimated out of sample error was only 3.1 % &#177; 0.33 %. While it is important to note that this out of sample error estimate is optimistic. The model that I have constructed in this study is quite a good predictor of the quality of the excercise of interest from raw sensor data.
 
